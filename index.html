@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LOS CUATES - Tamales en Hoja de Plátano</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1E2F5E">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Plus+Jakarta+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--marfil:#FFFCF2;--crema:#E9E0C9;--azul:#1E2F5E;--dorado:#B9975B}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--marfil);position:relative;overflow-x:hidden}
+#sarape{position:fixed;inset:0;z-index:-2;opacity:0.11;background-image:url('sarape.webp');background-size:420px;pointer-events:none}
+#watermark{position:fixed;inset:0;z-index:-1;opacity:0.11;background-image:url('los_cuates_logo.webp');background-position:center 18%;background-size:78%;background-repeat:no-repeat;pointer-events:none}
+.container{max-width:480px;margin:0 auto;padding:20px 16px 110px;position:relative;z-index:1}
+.header{text-align:center;padding:20px 0 10px}
+.logo{width:220px;border-radius:22px;box-shadow:0 8px 32px rgba(0,0,0,.08);border:1px solid var(--crema)}
+.brand{font-family:'Cormorant Garamond';font-size:58px;font-weight:700;color:var(--azul);letter-spacing:.06em;line-height:.9;margin-top:12px}
+.sub{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#6B7A4F;margin-top:8px}
+.addr{font-size:11px;color:#9A8F7A;margin-top:6px}
+.badge-wa{display:inline-block;margin-top:10px;background:var(--azul);color:#fff;padding:6px 14px;border-radius:999px;font-size:11px}
+.card{background:#fff;border:1px solid var(--crema);border-radius:26px;padding:20px;margin-top:18px;box-shadow:0 10px 30px rgba(0,0,0,.05)}
+.card-title{font-family:'Cormorant Garamond';font-size:28px;color:var(--azul);font-weight:700}
+#map{height:300px;border-radius:16px;margin-top:12px;border:1px solid var(--crema);z-index:1}
+.btn{width:100%;padding:13px;border-radius:999px;border:none;font-weight:600;cursor:pointer}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-outline{background:#fff;border:1px solid var(--crema);color:var(--azul);padding:11px;font-size:12px}
+.menu-item{display:flex;justify-content:space-between;padding:16px 0;border-bottom:1px solid #F5EEDD}
+.menu-name{font-family:'Cormorant Garamond';font-size:22px;font-weight:600;color:var(--azul)}
+.price{font-family:'Cormorant Garamond';font-size:22px;color:var(--dorado);font-weight:700}
+.qty{display:flex;gap:8px;align-items:center;margin-top:8px}
+.qty button{width:30px;height:30px;border-radius:999px;border:1px solid var(--crema);background:#fff;cursor:pointer}
+.input{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--crema);margin-top:6px}
+.cart{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:rgba(255,252,242,.94);backdrop-filter:blur(10px);border-top:1px solid var(--crema);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:10}
+.qr-box{margin-top:12px;padding:14px;background:#FFFEFB;border:1px dashed var(--crema);border-radius:18px;text-align:center}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-content{background:#fff;border-radius:24px;padding:20px;max-width:320px;width:100%;text-align:center}
+</style>
+</head>
+<body>
+<div id="sarape"></div><div id="watermark"></div>
+<div class="container">
+<div class="header">
+<img class="logo" src="los_cuates_logo.webp" alt="Los Cuates">
+<div class="brand">LOS CUATES</div>
+<div class="sub">Tamales en Hoja de Plátano — Saltillo</div>
+<div class="addr">Calle Chihuahua con Candela, República Poniente, Saltillo<br>WhatsApp 844-225-2582</div>
+<div class="badge-wa">Pedidos al WhatsApp 844-225-2582</div>
+</div>
+
+<div class="card">
+<div class="card-title" style="font-size:22px">¿Dónde te entregamos?</div>
+<div style="font-size:11px;color:#7D7768;margin-top:4px">Toca el mapa o usa el botón para fijar tu ubicación. El puesto está fijo en República Poniente.</div>
+<div id="map"></div>
+<button class="btn btn-outline" style="margin-top:10px" onclick="fijarCliente()">📍 Fijar mi ubicación (cliente)</button>
+<div id="locInfo" style="font-size:10px;color:#9A8F7A;margin-top:8px">Puesto fijo: 25.436413, -100.998999 • Chihuahua con Candela</div>
+<button class="btn btn-outline" style="margin-top:8px" onclick="ruta()">🧭 Ver ruta hacia el puesto</button>
+</div>
+
+<div class="card">
+<div class="card-title">Nuestra Selección</div>
+<div style="font-size:11px;color:#9A8F7A;letter-spacing:.08em;margin-top:2px">Artesanales • Hoja de plátano • $35 MXN</div>
+<div id="menu"></div>
+</div>
+
+<div class="card" id="checkout">
+<div class="card-title" style="font-size:22px">Tu Pedido</div>
+<div id="summary" style="font-size:12px;margin-top:8px">Aún no agregas tamales</div>
+<label style="font-size:10px;margin-top:12px;display:block">Nombre</label><input id="nombre" class="input" placeholder="Ej. Ana">
+<label style="font-size:10px;margin-top:8px;display:block">Entrega</label><select id="entrega" class="input"><option>A domicilio</option><option>Recoger en puesto</option></select>
+<label style="font-size:10px;margin-top:8px;display:block">Dirección / Referencias</label><input id="dir" class="input" placeholder="Colonia, calle, referencia (se llena automático con GPS)">
+<button class="btn btn-primary" style="margin-top:14px" onclick="enviarWhatsApp()">Enviar por WhatsApp → 844-225-2582</button>
+<div id="qrPedidoBox" class="qr-box" style="display:none">
+<div style="font-size:11px;font-weight:700;margin-bottom:8px">QR de tu pedido (cliente)</div>
+<img id="qrPedidoImg" src="" style="width:160px;height:160px">
+<div id="folioText" style="font-size:12px;font-weight:700;margin-top:6px"></div>
+<div style="font-size:9px;color:#9A8F7A;margin-top:4px">Muestra este QR al repartidor</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-title" style="font-size:22px">Descarga la App</div>
+<div style="font-size:11px;color:#7D7768;margin-top:4px">Comparte este QR para que tus clientes obtengan la aplicación al instante</div>
+<div class="qr-box">
+<img id="qrAppImg" src="" style="width:200px;height:200px">
+<div style="font-size:11px;font-weight:700;margin-top:8px;color:var(--azul)">LOS CUATES - Instalar App</div>
+<div style="font-size:9px;color:#9A8F7A;margin-top:4px">Escanea para abrir / instalar la app</div>
+<div style="margin-top:8px"><input id="appUrlInput" class="input" style="font-size:10px" placeholder="Pega aquí tu URL final (ej: https://tunombre.github.io/los-cuates/) para actualizar QR"></div>
+<button class="btn btn-outline" style="margin-top:8px;font-size:11px" onclick="actualizarQRapp()">🔄 Actualizar QR de la App</button>
+</div>
+</div>
+
+</div>
+
+<div class="cart"><div><div id="cCount" style="font-weight:700;color:#1E2F5E">0 tamales</div><div id="cTotal" style="font-family:'Cormorant Garamond';font-size:20px;color:#B9975B">$0</div></div><button class="btn btn-primary" style="width:auto;padding:10px 18px" onclick="document.getElementById('checkout').scrollIntoView({behavior:'smooth'})">Pedir</button></div>
+<div id="modal" class="modal" onclick="this.style.display='none'"><div class="modal-content"><div id="modalText"></div><button class="btn btn-primary" style="margin-top:12px" onclick="document.getElementById('modal').style.display='none'">Entendido</button></div></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+const sabores=[{id:1,nombre:'Queso',desc:'Rajas con Oaxaca fundido',precio:35},{id:2,nombre:'Verde de Pollo',desc:'Pollo en salsa verde tatemada',precio:35},{id:3,nombre:'Rojo de Puerco',desc:'Puerco en chile guajillo',precio:35}];
+let cart={},rest={lat:25.436413,lng:-100.998999},cust=null,map,rMarker,cMarker;
+function showModal(t){document.getElementById('modalText').innerText=t;document.getElementById('modal').style.display='flex';}
+function renderMenu(){document.getElementById('menu').innerHTML=sabores.map(s=>`<div class="menu-item"><div><div class="menu-name">${s.nombre}</div><div style="font-size:11px;color:#7D7768">${s.desc}</div><div class="qty"><button onclick="chg(${s.id},-1)">−</button><span id="q${s.id}">${cart[s.id]||0}</span><button onclick="chg(${s.id},1)">+</button></div></div><div class="price">$35</div></div>`).join('');}
+function chg(id,d){cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];document.getElementById('q'+id).innerText=cart[id]||0;upd();}
+function upd(){let t=0,c=0,lines=[];for(let id in cart){let s=sabores.find(x=>x.id==id);t+=s.precio*cart[id];c+=cart[id];lines.push(`${cart[id]}x ${s.nombre}`);}document.getElementById('cCount').innerText=`${c} tamales`;document.getElementById('cTotal').innerText=`$${t}`;document.getElementById('summary').innerHTML=c?lines.join('<br>')+`<br><b>Total $${t}</b>`:'Aún no agregas tamales';}
+function initMap(){try{if(typeof L==='undefined'){document.getElementById('map').innerHTML='<div style="padding:40px;text-align:center;font-size:12px">Mapa offline</div>';return;}map=L.map('map').setView([rest.lat,rest.lng],15);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);rMarker=L.marker([rest.lat,rest.lng]).addTo(map).bindPopup('LOS CUATES<br>Calle Chihuahua con Candela - Puesto fijo');map.on('click',e=>{cust={lat:e.latlng.lat,lng:e.latlng.lng};if(!cMarker)cMarker=L.marker([cust.lat,cust.lng],{icon:L.divIcon({html:'<div style=background:#1E2F5E;width:14px;height:14px;border-radius:999px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)></div>'})}).addTo(map);else cMarker.setLatLng([cust.lat,cust.lng]);document.getElementById('dir').value=`GPS ${cust.lat.toFixed(5)}, ${cust.lng.toFixed(5)}`;document.getElementById('locInfo').innerText=`Puesto fijo: 25.436413, -100.998999 | Cliente: ${cust.lat.toFixed(5)}, ${cust.lng.toFixed(5)}`;});}catch(e){console.log(e);}}
+function fijarCliente(){if(!navigator.geolocation){showModal('Toca el mapa donde estás para fijar tu ubicación');return;}navigator.geolocation.getCurrentPosition(p=>{cust={lat:p.coords.latitude,lng:p.coords.longitude};if(!cMarker)cMarker=L.marker([cust.lat,cust.lng],{icon:L.divIcon({html:'<div style=background:#1E2F5E;width:14px;height:14px;border-radius:999px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)></div>'})}).addTo(map);else cMarker.setLatLng([cust.lat,cust.lng]);document.getElementById('dir').value=`GPS ${cust.lat.toFixed(5)}, ${cust.lng.toFixed(5)}`;document.getElementById('locInfo').innerText=`Puesto fijo: 25.436413, -100.998999 | Cliente: ${cust.lat.toFixed(5)}, ${cust.lng.toFixed(5)}`;map.fitBounds([[rest.lat,rest.lng],[cust.lat,cust.lng]],{padding:[40,40]});},err=>{showModal('No se pudo obtener GPS. Toca el mapa donde estás.');},{enableHighAccuracy:true,timeout:12000});}
+function ruta(){if(!cust){showModal('Primero fija tu ubicación con el botón o tocando el mapa');return;}window.open(`https://www.google.com/maps/dir/?api=1&origin=${cust.lat},${cust.lng}&destination=${rest.lat},${rest.lng}`,'_blank');}
+function enviarWhatsApp(){let t=0,c=0,det=[];for(let id in cart){let s=sabores.find(x=>x.id==id);t+=s.precio*cart[id];c+=cart[id];det.push(`- ${cart[id]}x ${s.nombre} ($${s.precio*cart[id]})`);}if(c===0){showModal('Agrega tamales primero');return;}const nom=document.getElementById('nombre').value||'Cliente';const ent=document.getElementById('entrega').value;const dir=document.getElementById('dir').value;const folio='CUATES-'+Math.floor(1000+Math.random()*9000);let msg=`Hola LOS CUATES! Soy ${nom}%0AQuiero:%0A${det.join('%0A')}%0ATotal: $${t} (${c} tamales a $35)%0AEntrega: ${ent} - ${dir}%0AFolio: ${folio}`;if(cust)msg+=`%0AUbic cliente: https://www.google.com/maps?q=${cust.lat},${cust.lng}`;window.open(`https://wa.me/528442252582?text=${msg}`,'_blank');document.getElementById('qrPedidoBox').style.display='block';document.getElementById('qrPedidoImg').src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(folio+' - '+nom+' - $'+t)}`;document.getElementById('folioText').innerText=folio;document.getElementById('qrPedidoBox').scrollIntoView({behavior:'smooth'});}
+function generarQRapp(){let url=window.location.href;let input=document.getElementById('appUrlInput').value.trim();if(input) url=input;document.getElementById('qrAppImg').src=`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;}
+function actualizarQRapp(){generarQRapp();showModal('QR de la app actualizado con la URL que pegaste');}
+window.onload=()=>{renderMenu();upd();setTimeout(()=>{initMap();generarQRapp();},600);};
+</script>
+</body>
+</html>

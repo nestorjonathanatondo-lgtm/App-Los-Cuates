@@ -1,0 +1,6 @@
+{
+  "appId": "com.loscuates.tamales",
+  "appName": "Los Cuates",
+  "webDir": ".",
+  "bundledWebRuntime": false
+}
