@@ -1,1 +1,0 @@
-# Los-CuatesApp v6.3 FINAL CON TODO - Menu 3D caritas + Anuncios
